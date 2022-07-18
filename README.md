@@ -66,7 +66,7 @@ tar xvf loongarch64-clfs-system-x.x.tar.bz2 -C debian_sid_loong64-sysroot
 ```
 cd $HOME/nwjs/src
 ./buildtools/linux64/gn gen out/nw --args='clang_use_chrome_plugins=false enable_swiftshader=false angle_enable_swiftshader=false enable_swiftshader_vulkan=false treat_warnings_as_errors=false dcheck_always_on=false use_gold=false use_lld=false clang_base_path="/opt/loongarch64/toolchain" is_debug=false is_component_build=false is_component_ffmpeg=true target_cpu="loong64" use_sysroot=false'
-GYP_CHROMIUM_NO_ACTION=0 ./build/gyp_chromium -I third_party/node-nw/common.gypi -D building_nw=1 -D clang=1 -D clang_base_dir="/opt/loongarch64/toolchain" third_party/node-nw/node.gyp
+GYP_CHROMIUM_NO_ACTION=0 ./build/gyp_chromium -I third_party/node-nw/common.gypi -D building_nw=1 -D clang=1 -D target_arch=loong64 -D clang_base_dir="/opt/loongarch64/toolchain" third_party/node-nw/node.gyp
 ```
 ### 3.2.编译
 * 编译nwjs
