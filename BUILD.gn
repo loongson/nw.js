@@ -20,7 +20,7 @@ group("nwjs") {
     deps += [ "//buildtools/third_party/libc++:libcpp" ]
   }
   if (is_linux) {
-    deps += [ "//chrome:xdg_mime", "//components/crash/core/app:chrome_crashpad_handler", ":copy_icd" ]
+    deps += [ "//chrome:xdg_mime", "//components/crash/core/app:chrome_crashpad_handler" ]
   }
 }
 
@@ -261,18 +261,6 @@ action("commit_id") {
     public_configs = [ ":commit_id_config" ]
 }
 
-if (is_linux) {
-  copy("copy_icd") {
-    sources = [
-      "$root_out_dir/vk_swiftshader_icd.json",
-    ]
-    outputs = [ "$root_out_dir/lib/{{source_file_part}}" ]
-    deps = [
-      "//third_party/swiftshader/src/Vulkan:icd_file",
-    ]
-  }
-}
-
 if (is_mac) {
   copy("copy_ffmpeg") {
     sources = [ "$root_out_dir/libffmpeg.dylib" ]
@@ -373,8 +361,6 @@ if (is_linux && !is_component_build) {
                 "$root_shlib_dir/libffmpeg.so",
                 "$root_build_dir/chromedriver",
                 "$root_build_dir/nwjc",
-                "$root_build_dir/swiftshader/libEGL.so",
-                "$root_build_dir/swiftshader/libGLESv2.so",
                 "$root_build_dir/payload"]
     deps = [
              "//chrome:chrome_initial",
@@ -383,9 +369,7 @@ if (is_linux && !is_component_build) {
              ":payload",
              "//v8:nwjc",
              "//chrome/test/chromedriver:chromedriver",
-             "//third_party/ffmpeg:ffmpeg",
-             "//third_party/swiftshader/src/OpenGL/libEGL:swiftshader_libEGL",
-             "//third_party/swiftshader/src/OpenGL/libGLESv2:swiftshader_libGLESv2"
+             "//third_party/ffmpeg:ffmpeg"
              ]
     if (target_cpu == "x64") {
       inputs = [
