@@ -1,8 +1,21 @@
+diff --git base/allocator/partition_allocator/page_allocator_constants.h base/allocator/partition_allocator/page_allocator_constants.h
+index 751c2b3a5f6e..ef67843afd30 100644
+--- base/allocator/partition_allocator/page_allocator_constants.h
++++ base/allocator/partition_allocator/page_allocator_constants.h
+@@ -75,7 +75,7 @@ PageAllocationGranularityShift() {
+   // compiled for 64kB are likely to work on 4kB systems, 64kB is a good choice
+   // here.
+   return 16;  // 64kB
+-#elif defined(_MIPS_ARCH_LOONGSON)
++#elif defined(_MIPS_ARCH_LOONGSON) || defined(ARCH_CPU_LOONG64)
+   return 14;  // 16kB
+ #elif BUILDFLAG(IS_APPLE) && defined(ARCH_CPU_64_BITS)
+   return static_cast<size_t>(vm_page_shift);
 diff --git base/allocator/partition_allocator/partition_alloc_constants.h base/allocator/partition_allocator/partition_alloc_constants.h
-index f87c9a2b87b2..380ba19a2148 100644
+index 0d0cab2033c8..dabba1dc3410 100644
 --- base/allocator/partition_allocator/partition_alloc_constants.h
 +++ base/allocator/partition_allocator/partition_alloc_constants.h
-@@ -85,7 +85,7 @@ constexpr size_t kPartitionCachelineSize = 64;
+@@ -80,7 +80,7 @@ constexpr size_t kPartitionCachelineSize = 64;
  // other constant values, we pack _all_ `PartitionRoot::Alloc` sizes perfectly
  // up against the end of a system page.
  
@@ -12,7 +25,7 @@ index f87c9a2b87b2..380ba19a2148 100644
  PartitionPageShift() {
    return 16;  // 64 KiB
 diff --git base/third_party/double_conversion/double-conversion/utils.h base/third_party/double_conversion/double-conversion/utils.h
-index 471c3da84cdf..2373f7829a73 100644
+index ccd0a47dbb86..6a9a95291ede 100644
 --- base/third_party/double_conversion/double-conversion/utils.h
 +++ base/third_party/double_conversion/double-conversion/utils.h
 @@ -107,7 +107,7 @@ int main(int argc, char** argv) {
@@ -24,6 +37,44 @@ index 471c3da84cdf..2373f7829a73 100644
      defined(__or1k__) || defined(__arc__) || \
      defined(__microblaze__) || defined(__XTENSA__) || \
      defined(__EMSCRIPTEN__) || defined(__wasm32__)
+diff --git build/config/compiler/BUILD.gn build/config/compiler/BUILD.gn
+index 3db544bb0603..7b1ca9829cef 100644
+--- build/config/compiler/BUILD.gn
++++ build/config/compiler/BUILD.gn
+@@ -1175,6 +1175,12 @@ config("compiler_cpu_abi") {
+     } else if (current_cpu == "s390x") {
+       cflags += [ "-m64" ]
+       ldflags += [ "-m64" ]
++    } else if (current_cpu == "loong64") {
++      cflags += [ "-mcmodel=medium" ]
++      if (is_clang) {
++        cflags += [ "--target=loongarch64-unknown-linux-gnu" ]
++        ldflags += [ "--target=loongarch64-unknown-linux-gnu" ]
++      }
+     }
+   }
+ 
+@@ -1503,6 +1509,7 @@ config("default_warnings") {
+       "-Wno-unused-private-field",
+       "-Wno-unused-const-variable",
+       "-Wno-unreachable-code",
++      "-Wno-enum-constexpr-conversion",
+     ]
+   }
+ 
+diff --git build/config/linux/libffi/BUILD.gn build/config/linux/libffi/BUILD.gn
+index fb4fa18bf7c6..9ebfc901f014 100644
+--- build/config/linux/libffi/BUILD.gn
++++ build/config/linux/libffi/BUILD.gn
+@@ -4,7 +4,7 @@
+ 
+ import("//build/config/linux/pkg_config.gni")
+ 
+-if (default_toolchain == "//build/toolchain/cros:target") {
++if (default_toolchain == "//build/toolchain/cros:target" || current_cpu == "loong64") {
+   pkg_config("libffi") {
+     packages = [ "libffi" ]
+   }
 diff --git build/config/linux/pkg_config.gni build/config/linux/pkg_config.gni
 index 635fd8ddec3f..9a055d543710 100644
 --- build/config/linux/pkg_config.gni
@@ -55,6 +106,16 @@ index cbcf0a3f0961..fb835b2f69e7 100644
    if (current_os == target_os && current_cpu == target_cpu &&
        target_sysroot != "") {
      sysroot = target_sysroot
+diff --git build/gyp_chromium build/gyp_chromium
+index 4fc62bad9ba1..0dcee00615e7 100755
+--- build/gyp_chromium
++++ build/gyp_chromium
+@@ -1,4 +1,4 @@
+-#!/usr/bin/env python
++#!/usr/bin/env python2
+ # Copyright (c) 2012 The Chromium Authors. All rights reserved.
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
 diff --git build/linux/sysroot_scripts/install-sysroot.py build/linux/sysroot_scripts/install-sysroot.py
 index eaa1c2edfd6f..2431f682c338 100755
 --- build/linux/sysroot_scripts/install-sysroot.py
@@ -91,10 +152,10 @@ index e851f4229cc3..8d347ad90c01 100644
      }
  }
 diff --git chrome/BUILD.gn chrome/BUILD.gn
-index c35d72a1b1d4..35e821fb5b17 100644
+index f039d4bab97b..d6e80a0cc820 100644
 --- chrome/BUILD.gn
 +++ chrome/BUILD.gn
-@@ -287,6 +287,7 @@ if (!is_android && !is_mac) {
+@@ -303,6 +303,7 @@ if (!is_android && !is_mac) {
        } else {
        deps += [
          ":chrome_dll",
@@ -143,7 +204,7 @@ index 4e7a71a31f3a..153f0739ddb9 100644
  
  void AppUninstallDialogView::OnWidgetInitialized() {
 diff --git components/crash/core/app/breakpad_linux.cc components/crash/core/app/breakpad_linux.cc
-index a1921b2d0476..dc24abf89af0 100644
+index 00777c97f83a..0dcd5c4904e4 100644
 --- components/crash/core/app/breakpad_linux.cc
 +++ components/crash/core/app/breakpad_linux.cc
 @@ -1180,7 +1180,11 @@ void PostEnableBreakpadInitialization(
@@ -2344,7 +2405,7 @@ index 2df7b35f3e27..ab084d160cf2 100644
          "breakpad/src/processor/stackwalker_mips.h",
          "breakpad/src/processor/stackwalker_ppc.cc",
 diff --git third_party/crashpad/crashpad/client/crashpad_client_linux.cc third_party/crashpad/crashpad/client/crashpad_client_linux.cc
-index 295ec1615d83..3dfeeb2071a7 100644
+index 9cd452b577c8..20d3f33a0812 100644
 --- third_party/crashpad/crashpad/client/crashpad_client_linux.cc
 +++ third_party/crashpad/crashpad/client/crashpad_client_linux.cc
 @@ -713,6 +713,10 @@ void CrashpadClient::DumpWithoutCrash(NativeCPUContext* context) {
@@ -3151,10 +3212,10 @@ index 468bf0c70c05..bd8622ec2bf7 100644
  #else
  #error Port.
 diff --git third_party/crashpad/crashpad/snapshot/linux/process_reader_linux.cc third_party/crashpad/crashpad/snapshot/linux/process_reader_linux.cc
-index 5711f343a46c..c9fb40069bc7 100644
+index 4b663bbdfef9..7f4097726902 100644
 --- third_party/crashpad/crashpad/snapshot/linux/process_reader_linux.cc
 +++ third_party/crashpad/crashpad/snapshot/linux/process_reader_linux.cc
-@@ -108,6 +108,8 @@ void ProcessReaderLinux::Thread::InitializeStack(ProcessReaderLinux* reader) {
+@@ -127,6 +127,8 @@ void ProcessReaderLinux::Thread::InitializeStack(ProcessReaderLinux* reader) {
  #elif defined(ARCH_CPU_MIPS_FAMILY)
    stack_pointer = reader->Is64Bit() ? thread_info.thread_context.t64.regs[29]
                                      : thread_info.thread_context.t32.regs[29];
@@ -3280,10 +3341,10 @@ index b2450c206783..218e9333a0e3 100644
  
    module.ehdr.e_version = EV_CURRENT;
 diff --git third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.cc third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.cc
-index f279e0adaddb..1474f5a10e94 100644
+index 04776de6e6e3..62d6ea24edc1 100644
 --- third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.cc
 +++ third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.cc
-@@ -189,6 +189,13 @@ bool ThreadSnapshotLinux::Initialize(
+@@ -190,6 +190,13 @@ bool ThreadSnapshotLinux::Initialize(
          thread.thread_info.float_context.f32,
          context_.mipsel);
    }
@@ -3298,10 +3359,10 @@ index f279e0adaddb..1474f5a10e94 100644
  #error Port.
  #endif
 diff --git third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.h third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.h
-index 40cd7e7f54a3..605ebf984cef 100644
+index 4d1f7a711c1d..73ef30db15a2 100644
 --- third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.h
 +++ third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.h
-@@ -73,6 +73,8 @@ class ThreadSnapshotLinux final : public ThreadSnapshot {
+@@ -74,6 +74,8 @@ class ThreadSnapshotLinux final : public ThreadSnapshot {
  #elif defined(ARCH_CPU_MIPS_FAMILY)
      CPUContextMIPS mipsel;
      CPUContextMIPS64 mips64;
@@ -9241,7 +9302,7 @@ index 5e0fe7ea3e09..f00266d3ff3c 100644
 +      target_cpu == "loong64")
  }
 diff --git third_party/libvpx/BUILD.gn third_party/libvpx/BUILD.gn
-index a972e1f18b70..541f14a7c6e2 100644
+index 3125138d91c8..78882b05bd86 100644
 --- third_party/libvpx/BUILD.gn
 +++ third_party/libvpx/BUILD.gn
 @@ -401,6 +401,9 @@ static_library("libvpx") {
