@@ -1,0 +1,66 @@
+diff --git src/dawn/common/Assert.cpp src/dawn/common/Assert.cpp
+index ecc92dfc83..75f819d855 100644
+--- src/dawn/common/Assert.cpp
++++ src/dawn/common/Assert.cpp
+@@ -31,10 +31,12 @@ void BreakPoint() {
+     __asm__ __volatile__("ebreak");
+ #elif DAWN_PLATFORM_IS(MIPS)
+     __asm__ __volatile__("break");
+-#elif DAWN_PLATFORM_IS(S390) || DAWN_PLATFORM_IS_(S390X)
++#elif DAWN_PLATFORM_IS(S390) || DAWN_PLATFORM_IS(S390X)
+     __asm__ __volatile__(".word 0x0001");
+-#elif DAWN_PLATFORM_IS(PPC) || DAWN_PLATFORM_IS_(PPC64)
++#elif DAWN_PLATFORM_IS(PPC) || DAWN_PLATFORM_IS(PPC64)
+     __asm__ __volatile__("twge 2,2");
++#elif DAWN_PLATFORM_IS(LOONG64)
++    __asm__ __volatile__("break 0");
+ #else
+ #error "Unsupported platform"
+ #endif
+diff --git src/dawn/common/Platform.h src/dawn/common/Platform.h
+index 39d5eb4102..edb3f5313e 100644
+--- src/dawn/common/Platform.h
++++ src/dawn/common/Platform.h
+@@ -124,9 +124,9 @@
+ #define DAWN_PLATFORM_IS_MIPS64 1
+ #endif
+ 
+-#elif defiend(__s390__)
++#elif defined(__s390__)
+ #define DAWN_PLATFORM_IS_S390 1
+-#elif defiend(__s390x__)
++#elif defined(__s390x__)
+ #define DAWN_PLATFORM_IS_S390X 1
+ 
+ #elif defined(__PPC__)
+@@ -134,6 +134,9 @@
+ #elif defined(__PPC64__)
+ #define DAWN_PLATFORM_IS_PPC64 1
+ 
++#elif defined(__loongarch64)
++#define DAWN_PLATFORM_IS_LOONG64 1
++
+ #else
+ #error "Unsupported platform."
+ #endif
+@@ -144,7 +147,8 @@
+ //  - 32_BIT
+ #if defined(DAWN_PLATFORM_IS_X86_64) || defined(DAWN_PLATFORM_IS_ARM64) ||   \
+     defined(DAWN_PLATFORM_IS_RISCV64) || defined(DAWN_PLATFORM_IS_MIPS64) || \
+-    defined(DAWN_PLATFORM_IS_S390X) || defined(DAWN_PLATFORM_IS_PPC64)
++    defined(DAWN_PLATFORM_IS_S390X) || defined(DAWN_PLATFORM_IS_PPC64) || \
++    defined(DAWN_PLATFORM_IS_LOONG64)
+ #define DAWN_PLATFORM_IS_64_BIT 1
+ static_assert(sizeof(sizeof(char)) == 8, "Expect sizeof(size_t) == 8");
+ #elif defined(DAWN_PLATFORM_IS_I386) || defined(DAWN_PLATFORM_IS_ARM32) ||   \
+@@ -250,6 +254,10 @@ static_assert(sizeof(sizeof(char)) == 4, "Expect sizeof(size_t) == 4");
+ #define DAWN_PLATFORM_IS_PPC64 0
+ #endif
+ 
++#if !defined(DAWN_PLATFORM_IS_LOONG64)
++#define DAWN_PLATFORM_IS_LOONG64 0
++#endif
++
+ #if !defined(DAWN_PLATFORM_IS_64_BIT)
+ #define DAWN_PLATFORM_IS_64_BIT 0
+ #endif
