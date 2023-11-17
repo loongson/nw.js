@@ -1,0 +1,127 @@
+diff --git common.gypi common.gypi
+index 67aa62d0dd..5ead2c411f 100644
+--- common.gypi
++++ common.gypi
+@@ -4,8 +4,8 @@
+     'asan%': 0,
+     'werror': '',                     # Turn off -Werror in V8 build.
+     'visibility%': 'hidden',          # V8's visibility setting
+-    'target_arch%': 'ia32',           # set v8's target architecture
+-    'host_arch%': 'ia32',             # set v8's host architecture
++    'target_arch%': 'loong64',           # set v8's target architecture
++    'host_arch%': 'x64',             # set v8's host architecture
+     'want_separate_host_toolset%': 1, # V8 should not build target and host
+     'library%': 'static_library',     # allow override to 'shared_library' for DLL/.so builds
+     'component%': 'static_library',   # NB. these names match with what V8 expects
+@@ -36,6 +36,7 @@
+ 
+     'clang%': 0,
+     'error_on_warn%': 'false',
++    'clang_base_dir%': '',
+ 
+     'openssl_product': '<(STATIC_LIB_PREFIX)openssl<(STATIC_LIB_SUFFIX)',
+     'openssl_fips': '',
+@@ -65,7 +66,7 @@
+ 
+     # Enable disassembler for `--print-code` v8 options
+     'v8_enable_disassembler': 1,
+-    'v8_host_byteorder': '<!(python -c "import sys; print sys.byteorder")',
++    'v8_host_byteorder': '<!(python -c "import sys; print(sys.byteorder)")',
+ 
+     # Sets -dOBJECT_PRINT.
+     'v8_enable_object_print%': 1,
+@@ -114,6 +115,9 @@
+         'v8_postmortem_support%': 1,
+         'clang_dir': '<!(cd <(DEPTH) && pwd -P)/third_party/llvm-build/Release+Asserts',
+       }],
++      ['target_arch=="loong64" and building_nw==1', {
++        'clang_dir': '<(clang_base_dir)',
++      }],
+       ['GENERATOR == "ninja"', {
+         'obj_dir': '<(PRODUCT_DIR)/obj',
+         #'v8_base': '<(PRODUCT_DIR)/obj/tools/v8_gypfiles/libv8_snapshot.a',
+@@ -134,6 +138,9 @@
+       ['OS=="linux" and target_arch=="arm" and <(building_nw)==1', {
+         'sysroot': '<!(cd <(DEPTH) && pwd -P)/build/linux/debian_sid_arm-sysroot',
+       }],
++      ['OS=="linux" and target_arch=="loong64" and <(building_nw)==1', {
++        'sysroot': '<!(cd <(DEPTH) && pwd -P)/build/linux/debian_bullseye_loong64-sysroot',
++      }],
+       ['OS=="mac"', {
+         'clang%': 1,
+         'obj_dir%': '<(PRODUCT_DIR)/obj.target',
+@@ -569,11 +576,11 @@
+         'conditions': [
+           [ 'building_nw==1 and component=="shared_library"', {
+             'defines': [ '_LIBCPP_NO_AUTO_LINK' ],
+-            'include_dirs': [ '<(DEPTH)/buildtools/third_party/libc++/trunk/include'],
++            'include_dirs': [ '<(DEPTH)/third_party/libc++/src/include'],
+           }],
+           [ 'building_nw==1 and component!="shared_library"', {
+             'defines': [ '_LIBCPP_DISABLE_VISIBILITY_ANNOTATIONS' ],
+-            'include_dirs': [ #'<(DEPTH)/buildtools/third_party/libc++/trunk/include',
++            'include_dirs': [ #'<(DEPTH)/third_party/libc++/src/include',
+                               #'<(DEPTH)/buildtools/third_party/libc++',
+                             ],
+           }],
+@@ -628,9 +635,9 @@
+             'conditions': [
+               [ 'building_nw==1 and OS=="linux"', {
+                 'cflags': [ '--sysroot=<(sysroot)', '-nostdinc++', 
+-                        '-isystem<(PRODUCT_DIR)/../../buildtools/third_party/libc++/trunk/include', 
++                        '-isystem<(PRODUCT_DIR)/../../third_party/libc++/src/include', 
+                         '-isystem<(PRODUCT_DIR)/../../buildtools/third_party/libc++', 
+-                        '-isystem<(PRODUCT_DIR)/../../buildtools/third_party/libc++abi/trunk/include' ],
++                        '-isystem<(PRODUCT_DIR)/../../third_party/libc++abi/src/include' ],
+                 'ldflags': [ '--sysroot=<(sysroot)','<!(<(DEPTH)/content/nw/tools/sysroot_ld_path.sh <(sysroot))', '-nostdlib++' ],
+               }],
+               ['clang==1', {
+@@ -657,6 +664,10 @@
+                 'cflags': [ '-m64', '-march=z196' ],
+                 'ldflags': [ '-m64', '-march=z196' ],
+               }],
++              [ 'target_arch=="loong64" and OS=="linux"', {
++                'cflags': [ '--target=loongarch64-linux-gnu' ],
++                'ldflags': [ '--target=loongarch64-linux-gnu' ],
++              }],
+             ],
+           }],
+         ],
+diff --git config.gypi config.gypi
+index 7e0c96db5c..87ee39aeee 100644
+--- config.gypi
++++ config.gypi
+@@ -6,7 +6,7 @@
+                        'libraries': []},
+   'variables': { 'clang': 1,
+                  'gcc_version': 49,
+-                 'host_arch': 'x64',
++                 'host_arch': 'loong64',
+                  'icu_small': 'false',
+                  'node_install_npm': 'true',
+                  'node_prefix': '',
+@@ -26,9 +26,9 @@
+                  'node_use_mdb': 'false',
+                  'node_use_openssl': 'true',
+                  'node_use_perfctr': 'false',
+-                 'openssl_no_asm': 0,
++                 'openssl_no_asm': 1,
+                  'python': '/usr/bin/python',
+-                 'target_arch': 'x64',
++                 'target_arch': 'loong64',
+                  'uv_library': 'static_library',
+                  'uv_parent_path': '/deps/uv/',
+                  'uv_use_dtrace': 'false',
+diff --git deps/base64/base64/lib/env.h deps/base64/base64/lib/env.h
+index d5c2fdb795..966fa30b0a 100644
+--- deps/base64/base64/lib/env.h
++++ deps/base64/base64/lib/env.h
+@@ -43,7 +43,7 @@
+ #endif
+ 
+ // Detect word size:
+-#if defined (__x86_64__)
++#if defined (__x86_64__) || defined(__loongarch64)
+ // This also works for the x32 ABI, which has a 64-bit word size.
+ #  define BASE64_WORDSIZE 64
+ #elif defined (_INTEGRAL_MAX_BITS)
