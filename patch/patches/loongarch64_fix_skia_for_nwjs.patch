@@ -1,0 +1,12 @@
+diff --git modules/skcms/src/skcms_internals.h modules/skcms/src/skcms_internals.h
+index 3871ea35a3..23ebfdf8b9 100644
+--- modules/skcms/src/skcms_internals.h
++++ modules/skcms/src/skcms_internals.h
+@@ -45,6 +45,7 @@ extern "C" {
+                                                  && !__has_feature(address_sanitizer) \
+                                                  && !defined(__EMSCRIPTEN__) \
+                                                  && !defined(__arm__) \
++                                                 && !defined(__loongarch64) \
+                                                  && !defined(__riscv) \
+                                                  && !defined(_WIN32) && !defined(__SYMBIAN32__)
+             #define SKCMS_HAS_MUSTTAIL 1
