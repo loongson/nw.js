@@ -161,7 +161,6 @@ def generate_target_nw(platform_name, arch, version):
         if flavor == 'sdk':
             target['input'].append('nwjc')
             target['input'].append('chromedriver')
-            target['input'].append('minidump_stackwalk')
             
     elif platform_name == 'win':
         target['input'] = [
